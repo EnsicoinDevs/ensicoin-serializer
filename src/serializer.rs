@@ -1,5 +1,6 @@
 use super::types::VarUint;
 
+/// Trait used to serialize a type to a bytes array
 pub trait Serialize {
     fn serialize(&self) -> Vec<u8>;
 }

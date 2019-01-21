@@ -1,6 +1,7 @@
 use super::types::VarUint;
 use std::collections::VecDeque;
 
+/// Errors possible when deserializing a string
 pub enum Error {
     Message(String),
     BufferTooShort(usize),
@@ -19,11 +20,13 @@ impl std::fmt::Debug for Error {
 
 pub type Result<T> = std::result::Result<T, Error>;
 
+/// Structure holding the data to be deserialized
 pub struct Deserializer {
     buffer: VecDeque<u8>,
 }
 
 impl Deserializer {
+    /// Creates a Deserializer from a bytes vector
     pub fn new(v: Vec<u8>) -> Deserializer {
         Deserializer {
             buffer: VecDeque::from(v),
@@ -111,6 +114,7 @@ impl Deserializer {
     }
 }
 
+/// Trait used to create an instance of a type from a Deserializer
 pub trait Deserialize: Sized {
     fn deserialize(deserializer: &mut Deserializer) -> Result<Self>;
 }
