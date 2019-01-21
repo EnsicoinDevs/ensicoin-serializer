@@ -1,0 +1,10 @@
+[package]
+name = "ensicoin_serializer"
+version = "0.1.0"
+authors = ["Quentin Boyer <qbsecond@gmail.com>"]
+edition = "2018"
+
+description = "Functions to serialize / deserialize to the ensicoin protocol"
+
+
+[dependencies]
