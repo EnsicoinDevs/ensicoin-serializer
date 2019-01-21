@@ -1,4 +1,6 @@
+use super::types::Hash;
 use super::types::VarUint;
+use std::net::SocketAddr;
 
 /// Trait used to serialize a type to a bytes array
 pub trait Serialize {
@@ -88,6 +90,24 @@ impl<T: Serialize> Serialize for Vec<T> {
         for x in self.iter() {
             v.append(&mut x.serialize());
         }
+        v
+    }
+}
+
+impl Serialize for Hash {
+    fn serialize(&self) -> Vec<u8> {
+        self.value.clone()
+    }
+}
+
+impl Serialize for SocketAddr {
+    fn serialize(&self) -> Vec<u8> {
+        let mut v = Vec::new();
+        match self {
+            SocketAddr::V4(addr) => v.extend_from_slice(&addr.ip().to_ipv6_mapped().octets()),
+            SocketAddr::V6(addr) => v.extend_from_slice(&addr.ip().octets()),
+        };
+        v.append(&mut self.port().serialize());
         v
     }
 }

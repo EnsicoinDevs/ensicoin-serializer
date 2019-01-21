@@ -1,5 +1,8 @@
+use super::types::Hash;
 use super::types::VarUint;
 use std::collections::VecDeque;
+
+use std::net::{IpAddr, Ipv6Addr, SocketAddr};
 
 /// Errors possible when deserializing a string
 pub enum Error {
@@ -30,6 +33,19 @@ impl Deserializer {
     pub fn new(v: Vec<u8>) -> Deserializer {
         Deserializer {
             buffer: VecDeque::from(v),
+        }
+    }
+
+    pub fn extract_bytes(&mut self, length: usize) -> Result<Vec<u8>> {
+        let buff_length = self.buffer.len();
+        if length < buff_length {
+            Err(Error::BufferTooShort(buff_length))
+        } else {
+            let mut v = Vec::new();
+            for _ in 0..length {
+                v.push(self.buffer.pop_front().unwrap());
+            }
+            Ok(v)
         }
     }
 
@@ -152,6 +168,24 @@ impl Deserialize for String {
 impl<T: Deserialize> Deserialize for Vec<T> {
     fn deserialize(de: &mut Deserializer) -> Result<Vec<T>> {
         de.deserialize_vec()
+    }
+}
+
+impl Deserialize for Hash {
+    fn deserialize(de: &mut Deserializer) -> Result<Hash> {
+        Ok(Hash {
+            value: de.extract_bytes(32)?,
+        })
+    }
+}
+
+impl Deserialize for SocketAddr {
+    fn deserialize(de: &mut Deserializer) -> Result<SocketAddr> {
+        let high = u64::deserialize(de)?;
+        let low = u64::deserialize(de)?;
+        let addr = ((high as u128) << 64) + (low as u128);
+        let port = u16::deserialize(de)?;
+        Ok(SocketAddr::new(IpAddr::from(Ipv6Addr::from(addr)), port))
     }
 }
 

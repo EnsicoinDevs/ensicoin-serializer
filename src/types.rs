@@ -3,3 +3,7 @@
 pub struct VarUint {
     pub value: u64,
 }
+
+pub struct Hash {
+    pub value: Vec<u8>,
+}
