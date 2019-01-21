@@ -7,7 +7,7 @@ edition = "2018"
 description = "Functions to serialize / deserialize to the ensicoin protocol"
 
 readme = "readme.md"
-license = "GPL3"
+license = " GPL-3.0-or-later"
 
 repository = "https://github.com/EnsicoinDevs/ensicoin_serializer"
 
