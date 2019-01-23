@@ -38,7 +38,7 @@ impl Deserializer {
 
     pub fn extract_bytes(&mut self, length: usize) -> Result<Vec<u8>> {
         let buff_length = self.buffer.len();
-        if length < buff_length {
+        if length > buff_length {
             Err(Error::BufferTooShort(buff_length))
         } else {
             let mut v = Vec::new();
