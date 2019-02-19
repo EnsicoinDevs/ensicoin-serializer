@@ -4,7 +4,7 @@ use std::collections::VecDeque;
 
 use std::net::{IpAddr, Ipv6Addr, SocketAddr};
 
-/// Errors possible when deserializing a string
+/// Errors possible when deserializing bytes
 pub enum Error {
     Message(String),
     BufferTooShort(usize),
