@@ -5,18 +5,25 @@ use std::collections::VecDeque;
 use std::net::{IpAddr, Ipv6Addr, SocketAddr};
 
 /// Errors possible when deserializing bytes
+
+#[derive(Debug)]
 pub enum Error {
     Message(String),
-    BufferTooShort(usize),
+    /// Typename, type size (0 being unknown), bytes read
+    BufferTooShort(&'static str, usize, usize),
     InvalidString(std::string::FromUtf8Error),
 }
 
-impl std::fmt::Debug for Error {
+impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            Error::Message(s) => write!(f, "Error in deserialize : {}", s),
-            Error::BufferTooShort(bs) => write!(f, "Not enough bytes in buffer : {}", bs),
-            Error::InvalidString(utf8err) => utf8err.fmt(f),
+            Error::Message(s) => write!(f, "Error in deserializing : {}", s),
+            Error::BufferTooShort(t, exp, bs) => write!(
+                f,
+                "Not enough bytes in buffer reading {}, expected {} got {}",
+                t, exp, bs
+            ),
+            Error::InvalidString(utf8err) => write!(f, "Invalid String: {}", utf8err),
         }
     }
 }
@@ -39,7 +46,7 @@ impl Deserializer {
     pub fn extract_bytes(&mut self, length: usize) -> Result<Vec<u8>> {
         let buff_length = self.buffer.len();
         if length > buff_length {
-            Err(Error::BufferTooShort(buff_length))
+            Err(Error::BufferTooShort("bytes", length, buff_length))
         } else {
             let mut v = Vec::new();
             for _ in 0..length {
@@ -52,7 +59,7 @@ impl Deserializer {
     fn deserialize_u8(&mut self) -> Result<u8> {
         let length = self.buffer.len();
         if length < 1 {
-            Err(Error::BufferTooShort(length))
+            Err(Error::BufferTooShort("u8", 1, length))
         } else {
             Ok(self.buffer.pop_front().unwrap())
         }
@@ -61,7 +68,7 @@ impl Deserializer {
     fn deserialize_u16(&mut self) -> Result<u16> {
         let length = self.buffer.len();
         if length < 2 {
-            Err(Error::BufferTooShort(length))
+            Err(Error::BufferTooShort("u16", 2, length))
         } else {
             Ok(((self.buffer.pop_front().unwrap() as u16) << 8)
                 + (self.buffer.pop_front().unwrap() as u16))
@@ -71,7 +78,7 @@ impl Deserializer {
     fn deserialize_u32(&mut self) -> Result<u32> {
         let length = self.buffer.len();
         if length < 4 {
-            Err(Error::BufferTooShort(length))
+            Err(Error::BufferTooShort("u32", 4, length))
         } else {
             let mut value: u32 = 0;
             for i in 1..=4 {
@@ -84,7 +91,7 @@ impl Deserializer {
     fn deserialize_u64(&mut self) -> Result<u64> {
         let length = self.buffer.len();
         if length < 8 {
-            Err(Error::BufferTooShort(length))
+            Err(Error::BufferTooShort("u64", 8, length))
         } else {
             let mut value: u64 = 0;
             for i in 1..=8 {
@@ -94,20 +101,52 @@ impl Deserializer {
         }
     }
     fn deserialize_varuint(&mut self) -> Result<VarUint> {
-        let first_byte = self.deserialize_u8()?;
+        let first_byte = match self.deserialize_u8() {
+            Ok(n) => n,
+            Err(Error::BufferTooShort(_, exp, len)) => {
+                return Err(Error::BufferTooShort("VarUint", exp, len));
+            }
+            Err(e) => return Err(e),
+        };
         let value = match first_byte {
-            0xFD => self.deserialize_u16()? as u64,
-            0xFE => self.deserialize_u32()? as u64,
-            0xFF => self.deserialize_u64()?,
+            0xFD => match self.deserialize_u16() {
+                Ok(n) => n as u64,
+                Err(Error::BufferTooShort(_, exp, len)) => {
+                    return Err(Error::BufferTooShort("VarUint", exp, len));
+                }
+                Err(e) => return Err(e),
+            },
+            0xFE => match self.deserialize_u32() {
+                Ok(n) => n as u64,
+                Err(Error::BufferTooShort(_, exp, len)) => {
+                    return Err(Error::BufferTooShort("VarUint", exp, len));
+                }
+                Err(e) => return Err(e),
+            },
+            0xFF => match self.deserialize_u64() {
+                Ok(n) => n as u64,
+                Err(Error::BufferTooShort(_, exp, len)) => {
+                    return Err(Error::BufferTooShort("VarUint", exp, len));
+                }
+                Err(e) => return Err(e),
+            },
             _ => first_byte as u64,
         };
         Ok(VarUint { value })
     }
 
     fn deserialize_string(&mut self) -> Result<String> {
-        let length = self.deserialize_varuint()?.value as usize;
+        let length = match self.deserialize_varuint() {
+            Ok(n) => n.value as usize,
+            Err(e) => {
+                return Err(Error::Message(format!(
+                    "Error in reading string length: {}",
+                    e
+                )));
+            }
+        };
         if self.buffer.len() < length {
-            Err(Error::BufferTooShort(self.buffer.len()))
+            Err(Error::BufferTooShort("String", length, self.buffer.len()))
         } else {
             let mut bytes = Vec::new();
             for _ in 0..length {
@@ -121,10 +160,21 @@ impl Deserializer {
     }
 
     pub fn deserialize_vec<T: Deserialize>(&mut self) -> Result<Vec<T>> {
-        let length = self.deserialize_varuint()?.value;
+        let length = match self.deserialize_varuint() {
+            Ok(n) => n.value as usize,
+            Err(e) => {
+                return Err(Error::Message(format!(
+                    "Error in reading vec length: {}",
+                    e
+                )));
+            }
+        };
         let mut v = Vec::new();
         for _ in 0..length {
-            v.push(T::deserialize(self)?);
+            v.push(match T::deserialize(self) {
+                Ok(x) => x,
+                Err(e) => return Err(Error::Message(format!("Error in reading vec item: {}", e))),
+            });
         }
         Ok(v)
     }
