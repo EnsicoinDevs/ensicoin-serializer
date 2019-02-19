@@ -224,17 +224,39 @@ impl<T: Deserialize> Deserialize for Vec<T> {
 impl Deserialize for Hash {
     fn deserialize(de: &mut Deserializer) -> Result<Hash> {
         Ok(Hash {
-            value: de.extract_bytes(32)?,
+            value: match de.extract_bytes(32) {
+                Ok(x) => x,
+                Err(e) => return Err(Error::Message(format!("In reading Hash: {}", e))),
+            },
         })
     }
 }
 
 impl Deserialize for SocketAddr {
     fn deserialize(de: &mut Deserializer) -> Result<SocketAddr> {
-        let high = u64::deserialize(de)?;
-        let low = u64::deserialize(de)?;
+        let high = match u64::deserialize(de) {
+            Ok(x) => x,
+            Err(e) => {
+                return Err(Error::Message(format!(
+                    "In reading SocketAddr ip high: {}",
+                    e
+                )));
+            }
+        };
+        let low = match u64::deserialize(de) {
+            Ok(x) => x,
+            Err(e) => {
+                return Err(Error::Message(format!(
+                    "In reading SocketAddr ip low: {}",
+                    e
+                )));
+            }
+        };
         let addr = ((high as u128) << 64) + (low as u128);
-        let port = u16::deserialize(de)?;
+        let port = match u16::deserialize(de) {
+            Ok(x) => x,
+            Err(e) => return Err(Error::Message(format!("In reading SocketAddr port: {}", e))),
+        };
         Ok(SocketAddr::new(IpAddr::from(Ipv6Addr::from(addr)), port))
     }
 }
