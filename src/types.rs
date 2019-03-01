@@ -5,7 +5,7 @@ pub struct VarUint {
     pub value: u64,
 }
 
-#[derive(Hash, Eq, PartialEq)]
+#[derive(Hash, Eq, PartialEq, Clone)]
 pub struct Hash {
     pub value: Vec<u8>,
 }
