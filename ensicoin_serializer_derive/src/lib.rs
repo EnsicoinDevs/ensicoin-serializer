@@ -25,7 +25,7 @@ fn impl_deserialize_macro(ast: &syn::DeriveInput) -> TokenStream {
                     Some(field_name) => {
                         body = quote! {
                             #body
-                            let #field_name = match <#field_type>::Deserialize(de) {
+                            let #field_name = match <#field_type>::deserialize(de) {
                                 Ok(v) => v,
                                 Err(e) => {
                                     return Err(ensicoin_serializer::Error::Message(format!(
@@ -51,7 +51,7 @@ fn impl_deserialize_macro(ast: &syn::DeriveInput) -> TokenStream {
         impl #generics Deserialize for #name #generics {
             fn deserialize(
                 de: &mut ensicoin_serializer::Deserializer,
-            ) -> ensicoin_serializer::Result<Transaction> {
+            ) -> ensicoin_serializer::Result<Self> {
                 #body
                 Ok(#name {#field_list
                 })
