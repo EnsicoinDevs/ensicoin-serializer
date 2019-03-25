@@ -17,4 +17,4 @@ syn = "^0.14.4"
 quote = "^0.6.3"
 
 [dev-dependencies]
-ensicoin_serializer = "*"
+ensicoin_serializer = "1.0"
