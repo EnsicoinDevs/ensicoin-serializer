@@ -1,17 +1,5 @@
-[package]
-name = "ensicoin_serializer"
-version = "1.0.1"
-authors = ["Quentin Boyer <qbsecond@gmail.com>"]
-edition = "2018"
-
-description = "Functions to serialize / deserialize to the ensicoin protocol"
-
-readme = "readme.md"
-license = " GPL-3.0-or-later"
-
-repository = "https://github.com/EnsicoinDevs/ensicoin_serializer"
-
-[dependencies]
-ensicoin_serializer_derive = { version = "0.1", optional = true, path="../ensicoin_serializer_derive" }
-generic-array = "^0.12.0"
-typenum = "^1.10.0"
+[workspace]
+members = [
+	"ensicoin-serializer",
+	"ensicoin_serializer_derive",
+]
