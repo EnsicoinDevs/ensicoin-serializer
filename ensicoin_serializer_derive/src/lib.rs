@@ -1,5 +1,4 @@
 extern crate proc_macro;
-
 use crate::proc_macro::TokenStream;
 use quote::quote;
 use syn;
@@ -15,9 +14,9 @@ fn impl_deserialize_macro(ast: &syn::DeriveInput) -> TokenStream {
     let name = &ast.ident;
     let generics = &ast.generics;
 
-    let mut field_list = quote!{};
-    let mut body = quote!{};
-    
+    let mut field_list = quote! {};
+    let mut body = quote! {};
+
     match &ast.data {
         syn::Data::Struct(data) => {
             for field in data.fields.iter() {
@@ -38,7 +37,8 @@ fn impl_deserialize_macro(ast: &syn::DeriveInput) -> TokenStream {
                                 }
                             };
                         };
-                        field_list = quote!{#field_list, #field_name};
+                        field_list = quote! {#field_list
+                        #field_name,};
                     }
                     None => panic!("Can't derive unamed field in {}", name),
                 }
@@ -46,19 +46,19 @@ fn impl_deserialize_macro(ast: &syn::DeriveInput) -> TokenStream {
         }
         _ => panic!("Can only derive struts, {} is invalid", name),
     };
-    
-    let gen = quote!{
+
+    let gen = quote! {
         impl #generics Deserialize for #name #generics {
             fn deserialize(
                 de: &mut ensicoin_serializer::Deserializer,
-            ) -> ensicoin_serializer::Result<Transaction> {    
+            ) -> ensicoin_serializer::Result<Transaction> {
                 #body
-                Ok(#name {#field_list})
+                Ok(#name {#field_list
+                })
             }
        }
     };
     gen.into()
-    
 }
 
 #[proc_macro_derive(Serialize)]
@@ -72,7 +72,7 @@ fn impl_serialize_macro(ast: &syn::DeriveInput) -> TokenStream {
     let name = &ast.ident;
     let generics = &ast.generics;
 
-    let mut body = quote!{};
+    let mut body = quote! {};
     match &ast.data {
         syn::Data::Struct(data) => {
             for field in data.fields.iter() {
@@ -90,7 +90,7 @@ fn impl_serialize_macro(ast: &syn::DeriveInput) -> TokenStream {
         _ => panic!("Can only derive struts, {} is invalid", name),
     }
 
-    let gen = quote!{
+    let gen = quote! {
         impl #generics Serialize for #name #generics {
             fn serialize(&self) -> Vec<u8> {
                 let mut v = Vec::new();
