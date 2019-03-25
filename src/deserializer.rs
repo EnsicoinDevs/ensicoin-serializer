@@ -1,4 +1,4 @@
-use super::types::Hash;
+use super::types::Sha256Result;
 use super::types::VarUint;
 use std::collections::VecDeque;
 
@@ -221,14 +221,9 @@ impl<T: Deserialize> Deserialize for Vec<T> {
     }
 }
 
-impl Deserialize for Hash {
-    fn deserialize(de: &mut Deserializer) -> Result<Hash> {
-        Ok(Hash {
-            value: match de.extract_bytes(32) {
-                Ok(x) => x,
-                Err(e) => return Err(Error::Message(format!("In reading Hash: {}", e))),
-            },
-        })
+impl Deserialize for Sha256Result {
+    fn deserialize(de: &mut Deserializer) -> Result<Sha256Result> {
+        Ok(Sha256Result::clone_from_slice(&de.extract_bytes(32)?))
     }
 }
 

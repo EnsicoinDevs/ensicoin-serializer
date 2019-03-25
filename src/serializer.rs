@@ -1,4 +1,4 @@
-use super::types::Hash;
+use super::types::Sha256Result;
 use super::types::VarUint;
 use std::net::SocketAddr;
 
@@ -94,9 +94,9 @@ impl<T: Serialize> Serialize for Vec<T> {
     }
 }
 
-impl Serialize for Hash {
+impl Serialize for Sha256Result {
     fn serialize(&self) -> Vec<u8> {
-        self.value.clone()
+        self.to_vec()
     }
 }
 
