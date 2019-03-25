@@ -5,7 +5,4 @@ pub struct VarUint {
     pub value: u64,
 }
 
-#[derive(Hash, Eq, PartialEq, Clone)]
-pub struct Hash {
-    pub value: Vec<u8>,
-}
+pub type Sha256Result = generic_array::GenericArray<u8, typenum::U32>;
