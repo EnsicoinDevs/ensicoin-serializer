@@ -12,3 +12,5 @@ license = " GPL-3.0-or-later"
 repository = "https://github.com/EnsicoinDevs/ensicoin_serializer"
 
 [dependencies]
+ensicoin_serializer_derive = { version = "1.0", optional = true, path="ensicoin_serializer_derive" }
+
