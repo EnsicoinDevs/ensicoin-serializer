@@ -1,6 +1,6 @@
 [package]
 name = "ensicoin_serializer_derive"
-version = "0.2.2"
+version = "0.2.3"
 authors = ["Quentin Boyer <qbsecond@gmail.com>"]
 edition = "2018"
 
