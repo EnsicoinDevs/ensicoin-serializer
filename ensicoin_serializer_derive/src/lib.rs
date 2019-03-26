@@ -87,7 +87,7 @@ fn impl_serialize_macro(ast: &syn::DeriveInput) -> TokenStream {
                 }
             }
         }
-        _ => panic!("Can only derive struts, {} is invalid", name),
+        _ => panic!("Can only derive structs, {} is invalid", name),
     }
 
     let gen = quote! {
