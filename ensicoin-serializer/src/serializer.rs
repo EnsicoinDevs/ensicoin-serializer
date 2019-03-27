@@ -1,114 +1,114 @@
 use super::types::Sha256Result;
 use super::types::VarUint;
+use bytes::Bytes;
 use std::net::SocketAddr;
 
 /// Trait used to serialize a type to a bytes array
 pub trait Serialize {
-    fn serialize(&self) -> Vec<u8>;
+    fn serialize(&self) -> Bytes;
 }
 
 impl Serialize for u8 {
-    fn serialize(&self) -> Vec<u8> {
-        vec![self.clone()]
+    fn serialize(&self) -> Bytes {
+        Bytes::from(vec![self.clone()])
     }
 }
 
 impl Serialize for u16 {
-    fn serialize(&self) -> Vec<u8> {
+    fn serialize(&self) -> Bytes {
         let cp = self.clone();
         let mut v = Vec::new();
         v.push((cp >> 8) as u8);
         v.push(cp as u8);
-        v
+        Bytes::from(v)
     }
 }
 
 impl Serialize for u32 {
-    fn serialize(&self) -> Vec<u8> {
+    fn serialize(&self) -> Bytes {
         let cp = self.clone();
         let mut v = Vec::new();
         v.push((cp >> 24) as u8);
         v.push((cp >> 16) as u8);
         v.push((cp >> 8) as u8);
         v.push(cp as u8);
-        v
+        Bytes::from(v)
     }
 }
 
 impl Serialize for u64 {
-    fn serialize(&self) -> Vec<u8> {
+    fn serialize(&self) -> Bytes {
         let cp = self.clone();
         let mut v = Vec::new();
         for i in 1..=8 {
             v.push((cp >> (8 * (8 - i))) as u8);
         }
-        v
+        Bytes::from(v)
     }
 }
 
 impl Serialize for VarUint {
-    fn serialize(&self) -> Vec<u8> {
+    fn serialize(&self) -> Bytes {
         match self.value {
             0..=252 => (self.value as u8).serialize(),
             253..=0xFFFF => {
                 let mut v = vec![0xFD as u8];
-                v.append(&mut (self.value as u16).serialize());
-                v
+                v.extend_from_slice(&(self.value as u16).serialize());
+                Bytes::from(v)
             }
             0x10000..=0xFFFFFFFF => {
                 let mut v = vec![0xFE as u8];
-                v.append(&mut (self.value as u32).serialize());
-                v
+                v.extend_from_slice(&(self.value as u32).serialize());
+                Bytes::from(v)
             }
             0x100000000..=0xFFFFFFFFFFFFFFFF => {
                 let mut v = vec![0xFF as u8];
-                v.append(&mut (self.value as u64).serialize());
-                v
+                v.extend_from_slice(&(self.value as u64).serialize());
+                Bytes::from(v)
             }
-            _ => panic!("u64 bigger than 64bits"),
         }
     }
 }
 
 impl Serialize for String {
-    fn serialize(&self) -> Vec<u8> {
+    fn serialize(&self) -> Bytes {
         let length = VarUint {
             value: self.len() as u64,
         };
-        let mut v = length.serialize();
-        v.append(&mut self.as_bytes().to_vec());
-        v
+        let mut b = length.serialize();
+        b.extend_from_slice(self.as_bytes());
+        b
     }
 }
 
 impl<T: Serialize> Serialize for Vec<T> {
-    fn serialize(&self) -> Vec<u8> {
+    fn serialize(&self) -> Bytes {
         let length = VarUint {
             value: self.len() as u64,
         };
         let mut v = length.serialize();
         for x in self.iter() {
-            v.append(&mut x.serialize());
+            v.extend_from_slice(&x.serialize());
         }
         v
     }
 }
 
 impl Serialize for Sha256Result {
-    fn serialize(&self) -> Vec<u8> {
-        self.to_vec()
+    fn serialize(&self) -> Bytes {
+        Bytes::from(self.to_vec())
     }
 }
 
 impl Serialize for SocketAddr {
-    fn serialize(&self) -> Vec<u8> {
+    fn serialize(&self) -> Bytes {
         let mut v = Vec::new();
         match self {
             SocketAddr::V4(addr) => v.extend_from_slice(&addr.ip().to_ipv6_mapped().octets()),
             SocketAddr::V6(addr) => v.extend_from_slice(&addr.ip().octets()),
         };
-        v.append(&mut self.port().serialize());
-        v
+        v.extend_from_slice(&self.port().serialize());
+        Bytes::from(v)
     }
 }
 

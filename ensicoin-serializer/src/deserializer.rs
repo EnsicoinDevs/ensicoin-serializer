@@ -1,6 +1,6 @@
 use super::types::Sha256Result;
 use super::types::VarUint;
-use std::collections::VecDeque;
+use bytes::BytesMut;
 
 use std::net::{IpAddr, Ipv6Addr, SocketAddr};
 
@@ -32,27 +32,21 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 /// Structure holding the data to be deserialized
 pub struct Deserializer {
-    buffer: VecDeque<u8>,
+    buffer: BytesMut,
 }
 
 impl Deserializer {
     /// Creates a Deserializer from a bytes vector
-    pub fn new(v: Vec<u8>) -> Deserializer {
-        Deserializer {
-            buffer: VecDeque::from(v),
-        }
+    pub fn new(b: BytesMut) -> Deserializer {
+        Deserializer { buffer: b }
     }
 
-    pub fn extract_bytes(&mut self, length: usize) -> Result<Vec<u8>> {
+    pub fn extract_bytes(&mut self, length: usize) -> Result<BytesMut> {
         let buff_length = self.buffer.len();
         if length > buff_length {
             Err(Error::BufferTooShort("bytes", length, buff_length))
         } else {
-            let mut v = Vec::new();
-            for _ in 0..length {
-                v.push(self.buffer.pop_front().unwrap());
-            }
-            Ok(v)
+            Ok(self.buffer.split_to(length))
         }
     }
 
@@ -61,7 +55,7 @@ impl Deserializer {
         if length < 1 {
             Err(Error::BufferTooShort("u8", 1, length))
         } else {
-            Ok(self.buffer.pop_front().unwrap())
+            Ok(self.buffer.split_to(1)[0])
         }
     }
 
@@ -70,8 +64,8 @@ impl Deserializer {
         if length < 2 {
             Err(Error::BufferTooShort("u16", 2, length))
         } else {
-            Ok(((self.buffer.pop_front().unwrap() as u16) << 8)
-                + (self.buffer.pop_front().unwrap() as u16))
+            let raw = self.buffer.split_to(2);
+            Ok(((raw[0] as u16) << 8) + (raw[1] as u16))
         }
     }
 
@@ -80,9 +74,10 @@ impl Deserializer {
         if length < 4 {
             Err(Error::BufferTooShort("u32", 4, length))
         } else {
+            let raw = self.buffer.split_to(4);
             let mut value: u32 = 0;
             for i in 1..=4 {
-                value |= (self.buffer.pop_front().unwrap() as u32) << 8 * (4 - i);
+                value |= (raw[i - 1] as u32) << 8 * (4 - i);
             }
             Ok(value)
         }
@@ -93,9 +88,10 @@ impl Deserializer {
         if length < 8 {
             Err(Error::BufferTooShort("u64", 8, length))
         } else {
+            let raw = self.buffer.split_to(8);
             let mut value: u64 = 0;
             for i in 1..=8 {
-                value |= (self.buffer.pop_front().unwrap() as u64) << 8 * (8 - i);
+                value |= (raw[i - 1] as u64) << 8 * (8 - i);
             }
             Ok(value)
         }
@@ -148,11 +144,8 @@ impl Deserializer {
         if self.buffer.len() < length {
             Err(Error::BufferTooShort("String", length, self.buffer.len()))
         } else {
-            let mut bytes = Vec::new();
-            for _ in 0..length {
-                bytes.push(self.buffer.pop_front().unwrap());
-            }
-            match String::from_utf8(bytes) {
+            let bytes = self.buffer.split_to(length);
+            match String::from_utf8(bytes.to_vec()) {
                 Err(utf8err) => Err(Error::InvalidString(utf8err)),
                 Ok(s) => Ok(s),
             }
@@ -260,88 +253,103 @@ impl Deserialize for SocketAddr {
 mod tests {
     use crate::deserializer::Deserialize;
     use crate::deserializer::Deserializer;
-    use std::collections::VecDeque;
+    extern crate bytes;
+    use bytes::BytesMut;
 
     #[test]
     fn deserialize_vec() {
-        let mut v = VecDeque::new();
-        v.push_back(2);
-        v.push_back(2);
-        v.push_back(42);
-        v.push_back(43);
-        v.push_back(1);
-        v.push_back(44);
-        let mut de = Deserializer { buffer: v };
+        let mut v = Vec::new();
+        v.push(2);
+        v.push(2);
+        v.push(42);
+        v.push(43);
+        v.push(1);
+        v.push(44);
+        let mut de = Deserializer {
+            buffer: BytesMut::from(v),
+        };
         let decoded: Vec<Vec<u8>> = Vec::deserialize(&mut de).unwrap();
         assert_eq!(vec![vec![42 as u8, 43 as u8], vec![44]], decoded);
     }
 
     #[test]
     fn deserialize_string() {
-        let mut v = VecDeque::new();
-        v.push_back(3);
-        v.push_back(97);
-        v.push_back(98);
-        v.push_back(99);
-        let mut de = Deserializer { buffer: v };
+        let mut v = Vec::new();
+        v.push(3);
+        v.push(97);
+        v.push(98);
+        v.push(99);
+        let mut de = Deserializer {
+            buffer: BytesMut::from(v),
+        };
         let decoded = String::deserialize(&mut de).unwrap();
         assert_eq!(String::from("abc"), decoded);
     }
 
     #[test]
     fn deserialize_varuint() {
-        let mut v = VecDeque::new();
-        v.push_back(0xFD as u8);
-        v.push_back(42);
-        v.push_back(43);
-        let mut de = Deserializer { buffer: v };
+        let mut v = Vec::new();
+        v.push(0xFD as u8);
+        v.push(42);
+        v.push(43);
+        let mut de = Deserializer {
+            buffer: BytesMut::from(v),
+        };
         let decoded = de.deserialize_varuint().unwrap();
         assert_eq!(10795, decoded.value);
     }
 
     #[test]
     fn deserialize_u64() {
-        let mut v = VecDeque::new();
-        v.push_back(42);
-        v.push_back(43);
-        v.push_back(44);
-        v.push_back(45);
-        v.push_back(46);
-        v.push_back(47);
-        v.push_back(48);
-        v.push_back(49);
-        let mut de = Deserializer { buffer: v };
+        let mut v = Vec::new();
+        v.push(42);
+        v.push(43);
+        v.push(44);
+        v.push(45);
+        v.push(46);
+        v.push(47);
+        v.push(48);
+        v.push(49);
+        let mut de = Deserializer {
+            buffer: BytesMut::from(v),
+        };
         let decoded = de.deserialize_u64().unwrap();
         assert_eq!(3038570946151526449, decoded);
     }
 
     #[test]
     fn deserialize_u32() {
-        let mut v = VecDeque::new();
-        v.push_back(42);
-        v.push_back(43);
-        v.push_back(44);
-        v.push_back(45);
-        let mut de = Deserializer { buffer: v };
+        let mut v = Vec::new();
+        v.push(42);
+        v.push(43);
+        v.push(44);
+        v.push(45);
+        let mut de = Deserializer {
+            buffer: BytesMut::from(v),
+        };
         let decoded = de.deserialize_u32().unwrap();
         assert_eq!(707472429, decoded);
     }
 
     #[test]
     fn deserialize_u8() {
-        let mut v = VecDeque::new();
-        v.push_back(125);
-        let mut de = Deserializer { buffer: v };
+        let mut v = Vec::new();
+        v.push(125);
+        let mut de = Deserializer {
+            buffer: BytesMut::from(v),
+        };
         let decoded = de.deserialize_u8().unwrap();
         assert_eq!(125, decoded);
     }
 
     #[test]
     fn deserialize_u16() {
-        let mut v = VecDeque::new();
-        v.push_back(10);
-        v.push_back(15);
-        let mut de = Deserializer { buffer: v };
+        let mut v = Vec::new();
+        v.push(10);
+        v.push(15);
+        let mut de = Deserializer {
+            buffer: BytesMut::from(v),
+        };
         let decoded = de.deserialize_u16().unwrap();
         assert_eq!(2575, decoded);
     }
