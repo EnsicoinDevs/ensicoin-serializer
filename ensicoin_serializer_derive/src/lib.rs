@@ -80,7 +80,7 @@ fn impl_serialize_macro(ast: &syn::DeriveInput) -> TokenStream {
                     Some(field_name) => {
                         body = quote! {
                             #body
-                            v.append(&mut self.#field_name.serialize());
+                            v.extend_from_slice(&self.#field_name.serialize());
                         }
                     }
                     None => panic!("Can't derive unamed field in {}", name),
@@ -92,8 +92,8 @@ fn impl_serialize_macro(ast: &syn::DeriveInput) -> TokenStream {
 
     let gen = quote! {
         impl #generics Serialize for #name #generics {
-            fn serialize(&self) -> Vec<u8> {
-                let mut v = Vec::new();
+            fn serialize(&self) -> bytes::Bytes {
+                let mut v = bytes::Bytes::new();
                 #body
                 v
             }

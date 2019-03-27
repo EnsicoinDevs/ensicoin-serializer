@@ -1,3 +1,4 @@
+extern crate bytes;
 extern crate ensicoin_serializer;
 
 use ensicoin_serializer::Deserialize;
@@ -19,7 +20,7 @@ fn both_works() {
         gen_some: vec![1, 9],
     };
     let raw = s.serialize();
-    let mut de = ensicoin_serializer::Deserializer::new(raw);
+    let mut de = ensicoin_serializer::Deserializer::new(raw.try_mut().unwrap());
     let new_s = SomeStruct::deserialize(&mut de);
     assert_eq!(new_s.unwrap(), s);
 }

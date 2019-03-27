@@ -1,6 +1,6 @@
 [package]
 name = "ensicoin_serializer_derive"
-version = "0.2.3"
+version = "0.2.4"
 authors = ["Quentin Boyer <qbsecond@gmail.com>"]
 edition = "2018"
 
@@ -17,4 +17,5 @@ syn = "^0.14.4"
 quote = "^0.6.3"
 
 [dev-dependencies]
-ensicoin_serializer = "1.0"
+ensicoin_serializer = "2.0"
+bytes = "0.4"
