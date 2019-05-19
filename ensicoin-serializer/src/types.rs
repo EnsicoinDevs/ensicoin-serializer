@@ -6,3 +6,8 @@ pub struct VarUint {
 }
 
 pub type Sha256Result = generic_array::GenericArray<u8, typenum::U32>;
+
+pub fn hash_to_string(hash: &Sha256Result) -> String {
+    hash.iter()
+        .fold(String::new(), |acc, b| format!("{}{:x}", acc, b))
+}
