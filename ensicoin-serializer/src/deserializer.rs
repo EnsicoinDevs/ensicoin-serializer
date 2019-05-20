@@ -146,14 +146,6 @@ impl Deserializer {
             }
             Err(e) => return Err(e),
         };
-        #[cfg(feature = "log")]
-        {
-            debug!(
-                "extracted {:?} as var_uint length, remaining in buffer: {:?}",
-                first_byte,
-                &self.buffer.to_vec()
-            );
-        }
         let value = match first_byte {
             0xFD => match self.deserialize_u16() {
                 Ok(n) => n as u64,
@@ -194,6 +186,14 @@ impl Deserializer {
         if self.buffer.len() < length {
             Err(Error::BufferTooShort("String", length, self.buffer.len()))
         } else {
+            #[cfg(feature = "log")]
+            {
+                debug!(
+                    "extracting {} bytes as string, remaining in buffer: {:?}",
+                    length,
+                    &self.buffer.to_vec()
+                );
+            }
             let bytes = self.buffer.split_to(length);
             match String::from_utf8(bytes.to_vec()) {
                 Err(utf8err) => Err(Error::InvalidString(utf8err)),
@@ -212,6 +212,14 @@ impl Deserializer {
                 )));
             }
         };
+        #[cfg(feature = "log")]
+        {
+            debug!(
+                "extracting {} elements as vec, remaining in buffer: {:?}",
+                length,
+                &self.buffer.to_vec()
+            );
+        }
         let mut v = Vec::new();
         for i in 0..length {
             v.push(match T::deserialize(self) {
