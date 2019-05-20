@@ -46,7 +46,15 @@ impl Deserializer {
         if length > buff_length {
             Err(Error::BufferTooShort("bytes", length, buff_length))
         } else {
-            Ok(self.buffer.split_to(length))
+            let raw = self.buffer.split_to(length);
+            #[cfg(feature = "log")]
+            {
+                debug!(
+                    "extracted {:?}, remaining in buffer: {:?}",
+                    &raw, &self.buffer
+                );
+            }
+            Ok(raw)
         }
     }
 
@@ -55,7 +63,15 @@ impl Deserializer {
         if length < 1 {
             Err(Error::BufferTooShort("u8", 1, length))
         } else {
-            Ok(self.buffer.split_to(1)[0])
+            let raw = self.buffer.split_to(1);
+            #[cfg(feature = "log")]
+            {
+                debug!(
+                    "extracted {:?}, remaining in buffer: {:?}",
+                    &raw, &self.buffer
+                );
+            }
+            Ok(raw[0])
         }
     }
 
@@ -65,6 +81,13 @@ impl Deserializer {
             Err(Error::BufferTooShort("u16", 2, length))
         } else {
             let raw = self.buffer.split_to(2);
+            #[cfg(feature = "log")]
+            {
+                debug!(
+                    "extracted {:?}, remaining in buffer: {:?}",
+                    &raw, &self.buffer
+                );
+            }
             Ok(((raw[0] as u16) << 8) + (raw[1] as u16))
         }
     }
@@ -75,6 +98,13 @@ impl Deserializer {
             Err(Error::BufferTooShort("u32", 4, length))
         } else {
             let raw = self.buffer.split_to(4);
+            #[cfg(feature = "log")]
+            {
+                debug!(
+                    "extracted {:?}, remaining in buffer: {:?}",
+                    &raw, &self.buffer
+                );
+            }
             let mut value: u32 = 0;
             for i in 1..=4 {
                 value |= (raw[i - 1] as u32) << 8 * (4 - i);
@@ -89,6 +119,13 @@ impl Deserializer {
             Err(Error::BufferTooShort("u64", 8, length))
         } else {
             let raw = self.buffer.split_to(8);
+            #[cfg(feature = "log")]
+            {
+                debug!(
+                    "extracted {:?}, remaining in buffer: {:?}",
+                    &raw, &self.buffer
+                );
+            }
             let mut value: u64 = 0;
             for i in 1..=8 {
                 value |= (raw[i - 1] as u64) << 8 * (8 - i);

@@ -1,5 +1,9 @@
 extern crate bytes;
 
+#[cfg(feature = "log")]
+#[macro_use]
+extern crate log;
+
 pub mod deserializer;
 pub mod serializer;
 pub mod types;
