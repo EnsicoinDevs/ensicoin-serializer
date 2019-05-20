@@ -163,10 +163,15 @@ impl Deserializer {
             }
         };
         let mut v = Vec::new();
-        for _ in 0..length {
+        for i in 0..length {
             v.push(match T::deserialize(self) {
                 Ok(x) => x,
-                Err(e) => return Err(Error::Message(format!("Error in reading vec item: {}", e))),
+                Err(e) => {
+                    return Err(Error::Message(format!(
+                        "Error in reading vec item {}: {}",
+                        i, e
+                    )))
+                }
             });
         }
         Ok(v)
