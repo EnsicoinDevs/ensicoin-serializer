@@ -50,8 +50,9 @@ impl Deserializer {
             #[cfg(feature = "log")]
             {
                 debug!(
-                    "extracted {:?}, remaining in buffer: {:?}",
-                    &raw, &self.buffer
+                    "extracted {:?} as bytes, remaining in buffer: {:?}",
+                    &raw.to_vec(),
+                    &self.buffer.to_vec()
                 );
             }
             Ok(raw)
@@ -67,8 +68,9 @@ impl Deserializer {
             #[cfg(feature = "log")]
             {
                 debug!(
-                    "extracted {:?}, remaining in buffer: {:?}",
-                    &raw, &self.buffer
+                    "extracted {:?} as u8, remaining in buffer: {:?}",
+                    &raw.to_vec(),
+                    &self.buffer.to_vec()
                 );
             }
             Ok(raw[0])
@@ -84,8 +86,9 @@ impl Deserializer {
             #[cfg(feature = "log")]
             {
                 debug!(
-                    "extracted {:?}, remaining in buffer: {:?}",
-                    &raw, &self.buffer
+                    "extracted {:?} as u16, remaining in buffer: {:?}",
+                    &raw.to_vec(),
+                    &self.buffer.to_vec()
                 );
             }
             Ok(((raw[0] as u16) << 8) + (raw[1] as u16))
@@ -101,8 +104,9 @@ impl Deserializer {
             #[cfg(feature = "log")]
             {
                 debug!(
-                    "extracted {:?}, remaining in buffer: {:?}",
-                    &raw, &self.buffer
+                    "extracted {:?} as u32, remaining in buffer: {:?}",
+                    &raw.to_vec(),
+                    &self.buffer.to_vec()
                 );
             }
             let mut value: u32 = 0;
@@ -122,8 +126,9 @@ impl Deserializer {
             #[cfg(feature = "log")]
             {
                 debug!(
-                    "extracted {:?}, remaining in buffer: {:?}",
-                    &raw, &self.buffer
+                    "extracted {:?} as u64, remaining in buffer: {:?}",
+                    &raw.to_vec(),
+                    &self.buffer.to_vec()
                 );
             }
             let mut value: u64 = 0;
@@ -141,6 +146,14 @@ impl Deserializer {
             }
             Err(e) => return Err(e),
         };
+        #[cfg(feature = "log")]
+        {
+            debug!(
+                "extracted {:?} as var_uint length, remaining in buffer: {:?}",
+                first_byte,
+                &self.buffer.to_vec()
+            );
+        }
         let value = match first_byte {
             0xFD => match self.deserialize_u16() {
                 Ok(n) => n as u64,
