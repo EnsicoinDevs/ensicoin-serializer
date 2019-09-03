@@ -1,11 +1,11 @@
 [package]
 name = "ensicoin_serializer_derive"
-version = "0.2.5"
+version = "0.2.6"
 authors = ["Quentin Boyer <qbsecond@gmail.com>"]
 edition = "2018"
 
 description = "Derive macros for ensicoin_serializer"
-license = " GPL-3.0-or-later"
+license = "MIT"
 
 repository = "https://github.com/EnsicoinDevs/ensicoin_serializer"
 
