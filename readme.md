@@ -1,4 +1,4 @@
-# ensicoin-serializer
+# ensicoin-serializer (now in arcd)
 [![Build Status](https://travis-ci.com/EnsicoinDevs/ensicoin-serializer.svg?branch=master)](https://travis-ci.com/EnsicoinDevs/ensicoin-serializer)
 [![](http://meritbadge.herokuapp.com/ensicoin_serializer)](https://crates.io/crates/ensicoin_serializer)
 [![](https://tokei.rs/b1/github/EnsicoinDevs/ensicoin-serializer)](https://github.com/EnsicoinDevs/ensicoin-serializer)
